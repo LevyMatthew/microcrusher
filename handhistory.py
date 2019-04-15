@@ -1,7 +1,8 @@
 from os import listdir
 from os.path import isfile, join
 from itertools import combinations
-import matplotlib as mpl
+import numpy as np
+import matplotlib.pyplot as plt
 
 hand_files = [f for f in listdir('hands') if isfile(join('hands',f))]
 
@@ -13,13 +14,15 @@ class Card(object):
     S = 'schd'    
     
     def __init__(self,card_str):
-        self.card_str = card_str
-        
-        #N = value of cards. 0 for 2, 12 for A
-        self.r = Card.to_rank(card_str[0])
-        
-        #S = suit. S0,C1,H2,D3               
-        self.s = Card.to_suit(card_str[1])
+        if type(card_str) == str:       
+            self.card_str = card_str
+            
+            #N = value of cards. 0 for 2, 12 for A
+            self.r = Card.to_rank(card_str[0])
+            
+            #S = suit. S0,C1,H2,D3               
+            self.s = Card.to_suit(card_str[1])        
+            
     
     def __str__(self):
         return self.card_str
@@ -198,7 +201,7 @@ class Round(object):
         self.player_stacks = []        
 
         self.board = [] #list of Card [3-5]
-        self.player_holes = [] #list of Cards [n,2]
+        self.player_holes = [] #list of 2-Card Hands
         self.player_results = []
         
         #HOLE, FLOP, TURN, RIVER, SUMMARY
@@ -245,7 +248,8 @@ class Round(object):
             #Read Dealt Cards
             index = self.subheader_locs[0] + player + 1
             hand_str = lines[index][-8:-3]
-            self.player_holes.append([Card(i) for i in hand_str.split(' ')])
+            self.player_holes.append(Hand(hand_str,self.board))
+            #self.player_holes.append([Card(i) for i in hand_str.split(' ')])
 
         if self.has_flop:
             #Read Flop Cards
@@ -312,26 +316,46 @@ def read_hand_file(hand_file):
         rounds.append(Round(round_lines))        
     return rounds
 
-def plot_holes(hands):
-    buckets = [[0]*12]*12
+
+#plot a heatmap of frequency for a set of hands preflop
+def plot_hole_frequency(hands):
+    buckets = np.zeros((13,13))
+    for hand in hands:
+        r = sorted(hand.ranks)
+        print(r)
+        s = hand.suits
+        suited = (s[0] == s[1])
+        pair = (r[0] == r[1])
+        if suited:
+            buckets[r[0]][r[1]] = buckets[r[0]][r[1]] + 1
+        else:
+            buckets[r[1]][r[0]] = buckets[r[1]][r[0]] + 1
+    plt.imshow(buckets, cmap='hot', interpolation='nearest')
+    plt.show()
     return buckets
     
-# def save_holes_to_file(rounds):
-#     file = open('scraped_hands.txt','w+')
-#     for round in rounds:
-#         for i in range(round.player_count):
-#             file.write(str(round.player_holes[i])+' '+str(round.player_results[i])+'\n')
-#     file.close()
-#     
-# rounds = []
-# for hand_file in hand_files:    
-#     rounds.extend(read_hand_file(hand_file))
-#     
-# save_holes_to_file(rounds)
-h = Hand('9d Qs','As Ts Js Kc')
-hand_arr = [Hand('As Ad','') for i in range(10)]
+def save_holes_to_file(rounds):
+    file = open('scraped_hands.txt','w+')
+    for round in rounds:
+         for i in range(round.player_count):
+             file.write(str(round.player_holes[i])+' '+str(round.player_results[i])+'\n')
+    file.close()
     
-print(h)
-print(h.made_hand_components())
-print(h.made_hand())
-print(plot_holes(hand_arr))
+rounds = []
+for hand_file in hand_files:    
+    rounds.extend(read_hand_file(hand_file))
+
+hands = []
+for round in rounds:
+    hands.extend(round.player_holes)
+
+
+#Individual Hand Analysis
+#h = Hand('9d Qs','As Ts Js Kc')
+#print(h)
+#print(h.made_hand_components())
+#print(h.made_hand())
+
+#hand_arr = [Hand('As Ad','') for i in range(10)]
+    
+print(plot_hole_frequency(hands))
