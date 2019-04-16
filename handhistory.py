@@ -185,7 +185,16 @@ class Hand(object):
         pass
         
     __repr__ = __str__
+
+class Player(object):
     
+    def __init__(self, seat, position, stack):
+        self.seat = seat
+        self.position = position
+        self.stack = stack
+        self.actions = []
+    
+
 #A round holds hand data and betting data
 #Holds information about how people behave at certain stakes
 #At zone poker, every person should be assumed to be painstakingly average
@@ -197,12 +206,15 @@ class Round(object):
         self.game_type = lines[0]
         #int - Number of players
         self.player_count = 0
-        #list of ints - Each player's stack before playing
-        self.player_stacks = []        
+
+        #Player[] all the involved players
+        self.players = []        
+
+        #All the involved players indexed by position
+        self.player_at = {}
 
         self.board = [] #list of Card [3-5]
-        self.player_holes = [] #list of 2-Card Hands
-        self.player_results = []
+        self.player_hands = [] #list of Hands
         
         #HOLE, FLOP, TURN, RIVER, SUMMARY
         self.subheader_locs = [-1]*5
@@ -215,12 +227,20 @@ class Round(object):
             
             #Starting at line 1, one line per player indicating: Seat, Position, Stack  
             self.player_count = self.player_count + 1
+            words = lines[self.player_count].split(' ')
+            
+            seat = int(words[1][:-1])
+            
+            position = ''.join(words[2:-3])
             
             stack = lines[self.player_count].split('(')[1] #str
-            stack = stack.split(' ')[0]
-            stack = stack.replace(',','')
-            stack = stack.replace('$','')
-            self.player_stacks.append(float(stack))
+            stack = float(words[-3][1:].replace(',','').replace('$',''))
+            
+            p = Player(seat, position, stack)
+            self.player_at[position] = p
+            self.players.append(p)
+            
+            
         
                 
         for index,line in enumerate(lines):
@@ -248,9 +268,24 @@ class Round(object):
             #Read Dealt Cards
             index = self.subheader_locs[0] + player + 1
             hand_str = lines[index][-8:-3]
-            self.player_holes.append(Hand(hand_str,self.board))
+            h = Hand(hand_str,self.board)
+            self.players[player].hand = h
+            self.player_hands.append(h)
             #self.player_holes.append([Card(i) for i in hand_str.split(' ')])
-
+        
+        # Read Preflop behaviour
+        index = self.subheader_locs[0] + self.player_count + 1
+        line = lines[index]
+        stage = 'Pre-Flop'    
+        while '***' not in line:
+            words = line.split(' : ')            
+            position = words[0]
+            action = words[1]
+            self.player_at[position.replace(' ','')].actions.append((stage,action))
+            
+            index = index + 1
+            line = lines[index]
+ 
         if self.has_flop:
             #Read Flop Cards
             index = self.subheader_locs[1]
@@ -285,8 +320,11 @@ class Round(object):
     
 #File Input
 def filter_lines(lines):
-    filtered = [i for i in lines if 'Table enter user' not in i]
-    filtered = [i for i in lines if 'Draw for dealer' not in i]
+    
+    forbidden = ['Table enter user', 'Table leave user', 'Draw for dealer', 'Enter(Auto)', 'Leave(Auto)', 'Table deposit','Seat sit out', 'Seat stand', 'Seat re-join']
+    filtered = lines
+    for f in forbidden:
+        filtered = [i for i in filtered if f not in i]
     return filtered
 
 
@@ -334,6 +372,15 @@ def plot_hole_frequency(hands):
     plt.show()
     return buckets
     
+def flop_filter(rounds):
+    result = []
+    for round in rounds:
+        for player in round.players:
+            if ('Pre-Flop','Folds\n') not in player.actions:
+               result.append(player.hand)
+    return result
+                 
+    
 def save_holes_to_file(rounds):
     file = open('scraped_hands.txt','w+')
     for round in rounds:
@@ -347,8 +394,8 @@ for hand_file in hand_files:
 
 hands = []
 for round in rounds:
-    hands.extend(round.player_holes)
-
+    hands.extend(round.player_hands)
+hands = flop_filter(rounds)
 
 #Individual Hand Analysis
 #h = Hand('9d Qs','As Ts Js Kc')
