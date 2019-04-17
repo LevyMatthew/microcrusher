@@ -5,7 +5,7 @@ from keras import layers
 from keras.utils import to_categorical
 
 
-np.random.seed(0)
+#monp.random.seed(0)
 
 
 #each input is a dict
