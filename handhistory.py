@@ -405,4 +405,4 @@ hands = flop_filter(rounds)
 
 #hand_arr = [Hand('As Ad','') for i in range(10)]
     
-print(plot_hole_frequency(hands))
+#print(plot_hole_frequency(hands))

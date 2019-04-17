@@ -2,7 +2,7 @@ ai_players:
 - name: fish_player
   path: fish_player.py
 - name: smallstakes_player
-  path: smallstakes_player.py
+  path: ../smallstakes_player.py
 ante: 0
 blind_structure: null
 initial_stack: 100

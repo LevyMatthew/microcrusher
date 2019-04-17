@@ -5,40 +5,45 @@ from pypokerengine.utils.card_utils import gen_cards, estimate_hole_card_win_rat
 from keras import models
 from keras import layers
 from keras.utils import to_categorical
-
-
-
+from handhistory import *
 NB_SIMULATION = 1000
 
+#Artificially intelligent Agent that attempts to model the behaviour of a small-
+#stakes online poker player.
 class SmallStakesPlayer(BasePokerPlayer):  # Do not forget to make parent class as "BasePokerPlayer"
 
     #  we define the logic to make an action through this method. (so this method would be the core of your AI)
     def declare_action(self, valid_actions, hole_card, round_state):
         community_card = round_state['community_card']
-        win_rate = estimate_hole_card_win_rate(
-                nb_simulation=NB_SIMULATION,
-                nb_player=self.nb_player,
-                hole_card=gen_cards(hole_card),
-                community_card=gen_cards(community_card)
-                )
+        self.win_rate = self.calculate_win_rate(hole_card,community_card)
                 
         #Call
-        if win_rate >= 1.0 / self.nb_player:
+        if self.win_rate >= 1.0 / self.player_num:
             action = valid_actions[1]  # fetch CALL action info
         else: #Fold
             action = valid_actions[0]  # fetch FOLD action info
         return action['action'], action['amount']
 
 
-    def receive_game_start_message(self, game_info):
-        #Count the amount of players
-        self.nb_player = game_info['player_num']
+    def receive_game_start_message(self, game_info): 
+        self.round = Round(game_info)
+        print('Game Info:',game_info)
+        #Count the amount of players                
+        self.players = game_info['seats']
+        self.player_num = game_info['player_num']
+        rule = game_info['rule']
+        self.sb = rule['small_blind_amount']
 
     def receive_round_start_message(self, round_count, hole_card, seats):
-        pass
-
+        self.hole_card = hole_card
+        self.players = seats
+        #self.player_num = len(seats)
+        
     def receive_street_start_message(self, street, round_state):
-        pass
+        print('Street:',street)
+        print('Round State:',round_state)
+        community_card = round_state['community_card']
+        self.win_rate = self.calculate_win_rate(self.hole_card,community_card)
 
     def receive_game_update_message(self, action, round_state):
         pass
@@ -46,6 +51,27 @@ class SmallStakesPlayer(BasePokerPlayer):  # Do not forget to make parent class 
     def receive_round_result_message(self, winners, hand_info, round_state):
         pass
 
+    
+    def calculate_win_rate(self,hole_card,community_card):
+        return estimate_hole_card_win_rate(
+                nb_simulation=NB_SIMULATION,
+                nb_player=self.player_num,
+                hole_card=gen_cards(hole_card),
+                community_card=gen_cards(community_card)
+                )
+        
+    
+    def input_vector(self):
+        result = []
+        result.append(self.win_rate) #first feature: win rate with current hand
+        #TODO: Add more features:
+        # Cost to call
+        # position
+        # is_dealer
+        # is_bb
+        # is_sb, 
+        return result
+        
 #np.random.seed(0)
 
 train_features = []
@@ -55,13 +81,14 @@ train_features = []
 train_target_vector = []
 
 # Set the number of features we want
-N_FEATURES = 5
-BATCH_SIZE = 2
+N_FEATURES = 1
+BATCH_SIZE = 20
 
 #each input is a dict
 #{holeAn:int holeAs holeBn position:int cost_to_call:int}
 #input_data is a list of dicts
-def interpret_input_data(input_data):
+def interpret_input_data(game_info):
+    print(game_info)
     return np.zeros((BATCH_SIZE, N_FEATURES))
 
 
@@ -97,7 +124,7 @@ def train_model(features,target):
     
     return model
     
-m = train_model(np.random.sample(N_FEATURES*BATCH_SIZE).reshape((BATCH_SIZE,N_FEATURES)),np.random.sample(BATCH_SIZE).reshape((BATCH_SIZE,1)))
+#m = train_model(np.random.sample(N_FEATURES*BATCH_SIZE).reshape((BATCH_SIZE,N_FEATURES)),np.random.sample(BATCH_SIZE).reshape((BATCH_SIZE,1)))
 
 def setup_ai():
     return SmallStakesPlayer()
