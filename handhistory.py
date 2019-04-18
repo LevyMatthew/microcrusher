@@ -3,6 +3,7 @@ from os.path import isfile, join
 from itertools import combinations
 import numpy as np
 import matplotlib.pyplot as plt
+#from smallstakes_player import SmallStakesPlayer
 
 hand_files = [f for f in listdir('hands') if isfile(join('hands',f))]
 
@@ -11,17 +12,18 @@ class Card(object):
     #2 is lowest, A is highest
     R = '23456789TJQKA'
     #spade, club, heart, diamond
-    S = 'schd'    
+    S = 'SCHD'    
     
     def __init__(self,card_str):
-        if type(card_str) == str:       
-            self.card_str = card_str
+        self.card_str = card_str.upper()
+        if self.card_str[0] in Card.S:
+            self.card_str = self.card_str[::-1]
             
-            #N = value of cards. 0 for 2, 12 for A
-            self.r = Card.to_rank(card_str[0])
+        #N = value of cards. 0 for 2, 12 for A
+        self.r = Card.to_rank(self.card_str[0])
             
-            #S = suit. S0,C1,H2,D3               
-            self.s = Card.to_suit(card_str[1])        
+        #S = suit. S0,C1,H2,D3               
+        self.s = Card.to_suit(self.card_str[1])        
             
     
     def __str__(self):
@@ -34,8 +36,8 @@ class Card(object):
     def to_suit(s_str):
         return Card.S.index(s_str)
 
-
     __repr__ = __str__
+
 #Set of two through seven cards with relative strengths
 #Two of the cards are identified as pocket cards. The rest are board cards.
 #The distinction matters. For example, AA in my pocket is usually better than
@@ -52,6 +54,11 @@ class Hand(object):
  pocket.split(' ')]
         if type(board) == str and len(board) > 0:
             self.board = [Card(card_str) for card_str in board.split(' ')]
+            
+        if type(pocket) == list and len(pocket) > 0:
+            self.pocket = [Card(card_str) for card_str in pocket]
+        if type(board) == list and len(board) > 0:
+            self.board = [Card(card_str) for card_str in board]
 
         #list of five cards
         self.cards = self.pocket + self.board
@@ -83,8 +90,10 @@ class Hand(object):
         #ranks of all cards in order
         q['ranks'] = sorted(self.ranks)  
         q['suits'] = sorted(self.suits)      
-        #numerical value of pair 0 to 12. -1 for dne
-        q['pocket pair'] = self.pocket[0].r*(self.pocket[0].r == self.pocket[1].r)
+        
+        #booleans if pocket pair or pocket suited. Ranks and suits can be retrieved
+        #from pocket[0].r and pocket[0].s
+        q['pocket pair'] = (self.pocket[0].r == self.pocket[1].r)
         q['pocket suited'] = (self.pocket[0].s == self.pocket[1].s)
         
         if len(self.board) > 0:
@@ -183,6 +192,30 @@ class Hand(object):
     
     def draws(self):
         pass
+        
+    #returns a list of floats - features that the Hand can see:    
+    #DONE:
+    #suited (0/1)
+    #paired (0/1)
+    #top_card_rank (0-12) for (2-A)
+    #bot_card_rank (0-12) for (2-A)
+    #TODO:
+    #number of outs,draws,etc
+    #    
+    def get_features(self):
+        q = self.made_hand_components()
+        
+        bot_card_rank = q['ranks'][0]
+        top_card_rank = q['ranks'][1]
+        pairs = 1*q['pocket pair']
+        suited = 1*q['pocket suited']
+        
+        if len(self.board) > 0: #past preflop
+            #count outs
+            #determine draws
+            pass
+            
+        return [top_card_rank,bot_card_rank,pairs,suited]
         
     __repr__ = __str__
 
@@ -406,3 +439,5 @@ hands = flop_filter(rounds)
 #hand_arr = [Hand('As Ad','') for i in range(10)]
     
 #print(plot_hole_frequency(hands))
+
+#player = SmallStakesPlayer()

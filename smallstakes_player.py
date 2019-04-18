@@ -6,7 +6,7 @@ from keras import models
 from keras import layers
 from keras.utils import to_categorical
 from handhistory import *
-NB_SIMULATION = 1000
+NB_SIMULATION = 20
 
 #Artificially intelligent Agent that attempts to model the behaviour of a small-
 #stakes online poker player.
@@ -26,7 +26,6 @@ class SmallStakesPlayer(BasePokerPlayer):  # Do not forget to make parent class 
 
 
     def receive_game_start_message(self, game_info): 
-        self.round = Round(game_info)
         print('Game Info:',game_info)
         #Count the amount of players                
         self.players = game_info['seats']
@@ -43,10 +42,14 @@ class SmallStakesPlayer(BasePokerPlayer):  # Do not forget to make parent class 
         print('Street:',street)
         print('Round State:',round_state)
         community_card = round_state['community_card']
-        self.win_rate = self.calculate_win_rate(self.hole_card,community_card)
+        self.hand = Hand(self.hole_card,community_card)
+        #print('Hole Card',self.hole_card,':',type(self.hole_card))
+        #print('Community Card',community_card,':',type(community_card))
+        print('Hand:',self.hand)
+        #self.win_rate = self.calculate_win_rate(self.hole_card,community_card)
 
     def receive_game_update_message(self, action, round_state):
-        pass
+        print('Action:',action)
 
     def receive_round_result_message(self, winners, hand_info, round_state):
         pass
