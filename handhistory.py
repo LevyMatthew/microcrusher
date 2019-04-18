@@ -68,16 +68,22 @@ class Hand(object):
     def __str__(self):
         return (' ').join([str(card) for card in self.cards])
     
-    def made_hand(self):        
+    def made_hand(self): 
         h = {}
-        q = self.made_hand_components()        
-        if len(q['flush']) > 0 and len(q['straight']) > 0:
-            pass
-        elif len(q['flush']) > 0:
-            pass
-        elif len(q['straight']) > 0:
-            pass
-        #go through pair, set, two pair, etc replacing name and rank if exists 
+        q = self.made_hand_components()
+        
+        if len(self.board) > 0:
+            if len(q['flush']) > 0 and len(q['straight']) > 0:
+                pass
+            elif len(q['flush']) > 0:
+                pass
+            elif len(q['straight']) > 0:
+                pass        
+            #go through pair, set, two pair, etc replacing name and rank if exists 
+        elif q['pocket pair']:
+            h['name'] = 'pair'
+            h['rank'] = cardA.r
+            
         else:
             h['name'] = 'high card'
             h['rank'] = max(q['ranks'])
@@ -101,13 +107,51 @@ class Hand(object):
             q['pair'] = self.get_pairs()        
             q['set'] = self.get_sets()
             q['quads'] = self.get_quads()
-            
             q['straight']  = self.get_straights()
             q['flush'] = self.get_flushes()    
             #The above are all that is required to determine hand rank.
             #For example, a pair and a set make a full house
                 
         return q
+    
+    def hand_draws(self):
+        q = {}
+        #flush draw
+        #if hand has 4 of same suit
+        
+        #straight draw
+        #if hand has four out of:
+        #[A0123,01234,12345,23456,...,89TJQ,TJQKA]
+        
+        #pairs and sets
+        return q
+    
+            
+    #returns a list of floats - features that the Hand can see:    
+    #DONE:
+    #suited (0/1)
+    #paired (0/1)
+    #top_card_rank (0-12) for (2-A)
+    #bot_card_rank (0-12) for (2-A)
+    #TODO:
+    #number of outs,draws,etc
+    #    
+    def get_features(self):
+        q = self.made_hand_components()
+        
+        bot_card_rank = q['ranks'][0]
+        top_card_rank = q['ranks'][1]
+        pairs = 1*q['pocket pair']
+        suited = 1*q['pocket suited']
+        
+        if len(self.board) > 0: #past preflop
+            h = self.made_hand()
+            
+            #count outs
+            #determine draws
+            pass
+            
+        return [top_card_rank,bot_card_rank,pairs,suited]
     
     #pairs are a combination of:
     #pocket pair
@@ -117,7 +161,6 @@ class Hand(object):
         #Entries in p are (r,k) where r is the rank and k is the number of hole cards used
         p = []
       
-
         #Pocket pair
         if self.ranks[0] == self.ranks[1]:
             p.append((self.ranks[0],2))
@@ -126,7 +169,7 @@ class Hand(object):
             for cardA in self.pocket:
                 for cardB in self.board:
                     if cardA.r == cardB.r:
-                        p.append((cardA.r,1))
+                        p.append((cardA.r,1))                        
                 
         #Board pair
         for i,cardA in enumerate(self.board):
@@ -134,7 +177,7 @@ class Hand(object):
                 if cardA.r == cardB.r:
                     p.append((cardA.r,0))
                     
-        return p
+        return list(set(p))
     
     def get_sets(self):
         s = []
@@ -153,14 +196,38 @@ class Hand(object):
         for i,cardA in enumerate(self.board):
             for j,cardB in enumerate(self.board[i+1:]):
                 if cardA.r == cardB.r:
-                    for cardC in self.board[j+2:]:
+                    for cardC in self.board[j+1:]:
                         if cardA.r == cardC.r:
                             s.append((cardA.r,0))                            
-        return s
+        return list(set(s))
     
     #TODO
     def get_quads(self):
-        return []
+        q = []
+        if self.ranks[0] == self.ranks[1]:
+            for i,cardA in enumerate(self.board):
+                if cardA.r == self.ranks[0]:
+                   for j,cardB in enumerate(self.board[i+1:]):
+                       if cardB.r == cardA.r:
+                           q.append((cardA.r,2))
+        else:
+            for cardA in self.pocket:
+                for i,cardB in enumerate(self.board):
+                    if cardA.r == cardB.r:
+                        for j,cardC in self.board[i+1:]:
+                            if cardA.r == cardC.r:
+                                for k,cardD in self.board[i+1:]:
+                                    if cardA.r == cardD.r:
+                                        q.append((cardA.r,1))
+                                        
+        for i,cardA in enumerate(self.board):
+            for j,cardB in enumerate(self.board[i+1:]):
+                if cardA.r == cardB.r:
+                    for k,cardC in enumerate(self.board[j+1:]):
+                        if cardA.r == cardC.r:
+                            for cardD in self.board[k+1:]:
+                                q.append((cardA.r,0)) 
+        return q
     
     def get_straights(self):
         s = []
@@ -189,33 +256,7 @@ class Hand(object):
                         hole_cards = hole_cards + 1
                 f.append((flush_cards,hole_cards))
         return f
-    
-    def draws(self):
-        pass
-        
-    #returns a list of floats - features that the Hand can see:    
-    #DONE:
-    #suited (0/1)
-    #paired (0/1)
-    #top_card_rank (0-12) for (2-A)
-    #bot_card_rank (0-12) for (2-A)
-    #TODO:
-    #number of outs,draws,etc
-    #    
-    def get_features(self):
-        q = self.made_hand_components()
-        
-        bot_card_rank = q['ranks'][0]
-        top_card_rank = q['ranks'][1]
-        pairs = 1*q['pocket pair']
-        suited = 1*q['pocket suited']
-        
-        if len(self.board) > 0: #past preflop
-            #count outs
-            #determine draws
-            pass
-            
-        return [top_card_rank,bot_card_rank,pairs,suited]
+
         
     __repr__ = __str__
 
