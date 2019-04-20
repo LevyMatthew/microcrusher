@@ -106,7 +106,7 @@ def train_model(features,target):
     
     # Add fully connected layer with a ReLU activation function
     model.add(layers.Dense(32, input_dim=32, activation='sigmoid'))
-    
+
     # Add fully connected layer with a softmax activation function
     model.add(layers.Dense(units=target.shape[-1], activation='sigmoid'))
     

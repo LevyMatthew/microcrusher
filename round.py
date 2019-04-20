@@ -57,11 +57,11 @@ class Round(object):
                 word = line.split(' ')[1] #Word between the *** WORD ***                   
                 #Process hole cards             
                 if word == 'HOLE':
-                    self.subheader_locs[0] = index                                    
+                    self.subheader_locs[0] = index              
                 #Process flop cards
                 elif word == 'FLOP':
                     self.subheader_locs[1] = index  
-                    self.has_flop = True                                  
+                    self.has_flop = True
                 elif word == 'TURN':
                     self.subheader_locs[2] = index
                     self.has_turn = True
@@ -78,8 +78,8 @@ class Round(object):
             h = Hand(hand_str,self.board)
             self.players[player].hand = h
             self.player_hands.append(h)
-            #self.player_holes.append([Card(i) for i in hand_str.split(' ')])
         
+        #TODO: Instances of Street for each street. Parse individual lines in street constructor
         # Read Preflop behaviour
         index = self.subheader_locs[0] + self.player_count + 1
         line = lines[index]
@@ -120,4 +120,10 @@ class Round(object):
         #self.players_in_flop = 
         #self.players_in_turn =       
         #self.final_pot_size = 
-    
+        
+    #return list of floats 0-1 representing features based on round data
+    def get_features(self):
+        #pot odds
+        #outs
+        #if outs*0.02 > pot odds
+        pass

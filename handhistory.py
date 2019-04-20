@@ -67,7 +67,8 @@ def plot_hole_frequency(hands):
     plt.imshow(buckets, cmap='hot', interpolation='nearest')
     plt.show()
     return buckets
-    
+
+#go through all rounds returning only the hands that saw the flop
 def flop_filter(rounds):
     result = []
     for round in rounds:
@@ -76,7 +77,7 @@ def flop_filter(rounds):
                result.append(player.hand)
     return result
                  
-    
+#data scraping hole cards and results from hands
 def save_holes_to_file(rounds):
     file = open('scraped_hands.txt','w+')
     for round in rounds:
@@ -101,7 +102,7 @@ hands = flop_filter(rounds)
 
 #hand_arr = [Hand('As Ad','') for i in range(10)]
     
-#print(plot_hole_frequency(hands))
+print(plot_hole_frequency(hands))
 
 #player = SmallStakesPlayer()
 

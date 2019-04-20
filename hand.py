@@ -55,7 +55,7 @@ class Hand(object):
                 h['name'] = 'quad'
                 h['rank'] = q['quad'][0]           
             #full house
-            elif len(q['set'] > 0 and q['pair'] > 1):
+            elif len(q['set']) > 0 and len(q['pair']) > 1:
                 set_r = max(set)
                 pair_r = max([i for i in q['pair'] if set_r != i])
             elif len(q['flush']) > 0:
@@ -125,31 +125,40 @@ class Hand(object):
         return q
     
             
-    #returns a list of floats - features that the Hand can see:    
+    #returns a list of floats from 0-1 - features that the Hand can see:    
     #DONE:
-    #suited (0/1)
-    #paired (0/1)
-    #top_card_rank (0-12) for (2-A)
-    #bot_card_rank (0-12) for (2-A)
+    #suited (0 or 1) for (F or T)
+    #paired (0 or 1) for (F or T)
+    #top_card_rank (0-1) for (2-A)
+    #bot_card_rank (0-1) for (2-A)
+    #rank_diff (0-1) for (
     #TODO:
     #number of outs,draws,etc
     #    
     def get_features(self):
         q = self.made_hand_components()
         
-        bot_card_rank = q['ranks'][0]
-        top_card_rank = q['ranks'][1]
+        #Float from 0-1. 1 for A, 0 for 2
+        bot_card_rank = q['ranks'][0]/12.0
+        top_card_rank = q['ranks'][1]/12.0
+        
+        #1-(integer difference between the ranks of the cards)/12
+        #so that 0.9-1 is connectors and pairs while 0 is far cards
+        rank_diff = q['ranks'][1] - q['ranks'][0]
+        rank_diff = (rank_diff % 12)/11
+        rank_diff = 1 - rank_diff
+                
         pairs = 1*q['pocket pair']
         suited = 1*q['pocket suited']
         
         if len(self.board) > 0: #past preflop
-            h = self.made_hand()
+            h = self.best_made_hand()
             
             #count outs
             #determine draws
             pass
             
-        return [top_card_rank,bot_card_rank,pairs,suited]
+        return [top_card_rank,bot_card_rank,rank_diff,pairs,suited]
     
     #pairs are a combination of:
     #pocket pair
