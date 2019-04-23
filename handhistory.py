@@ -89,10 +89,15 @@ rounds = []
 for hand_file in hand_files:    
     rounds.extend(read_hand_file(hand_file))
 
-hands = []
+all_hands = []
+#for round in rounds:
+#    all_hands.extend(round.player_hands)
+all_hands = flop_filter(rounds)
+
+all_streets = []
 for round in rounds:
-    hands.extend(round.player_hands)
-hands = flop_filter(rounds)
+    all_streets.extend(round.streets)
+
 
 #Individual Hand Analysis
 #h = Hand('9d Qs','As Ts Js Kc')
@@ -102,16 +107,16 @@ hands = flop_filter(rounds)
 
 #hand_arr = [Hand('As Ad','') for i in range(10)]
     
-print(plot_hole_frequency(hands))
+#print(plot_hole_frequency(all_hands))
 
 #player = SmallStakesPlayer()
 
-h = Hand(['H4','S4'],['D7','C3','S8'])
-print(h)
-print(h.made_hand_components())
-print(h.best_made_hand())
-
-h = Hand(['H4','S4'],['C4','H7','H8'])
-print(h)
-print(h.made_hand_components())
-print(h.best_made_hand())
+# h = Hand(['H4','S4'],['D7','C3','S8'])
+# print(h)
+# print(h.made_hand_components())
+# print(h.best_made_hand())
+# 
+# h = Hand(['H4','S4'],['C4','H7','H8'])
+# print(h)
+# print(h.made_hand_components())
+# print(h.best_made_hand())

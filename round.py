@@ -1,4 +1,5 @@
 from player import Player
+from street import Street
 from hand import Hand
 from card import Card
 
@@ -24,10 +25,10 @@ class Round(object):
         self.player_hands = [] #list of Hands
         
         #HOLE, FLOP, TURN, RIVER, SUMMARY
-        self.subheader_locs = [-1]*5
-        self.has_flop = False
-        self.has_turn = False
-        self.has_river = False
+        self.subheader_locs = []     
+        self.streets = []
+        street_names = ['HOLE','FLOP','TURN','RIVER','SUMMARY']
+        self.street_by_name = {}
         
         #Count the Players and process position and stack information
         while lines[self.player_count+1][0:4] == 'Seat':
@@ -54,22 +55,8 @@ class Round(object):
              
             #Subheader Line
             if line.split(' ')[0]=='***':
-                word = line.split(' ')[1] #Word between the *** WORD ***                   
-                #Process hole cards             
-                if word == 'HOLE':
-                    self.subheader_locs[0] = index              
-                #Process flop cards
-                elif word == 'FLOP':
-                    self.subheader_locs[1] = index  
-                    self.has_flop = True
-                elif word == 'TURN':
-                    self.subheader_locs[2] = index
-                    self.has_turn = True
-                elif word == 'RIVER':
-                    self.subheader_locs[3] = index
-                    self.has_river = True
-                elif word == 'SUMMARY':
-                    self.subheader_locs[4] = index
+                word = line.split(' ')[1] #Word between the *** WORD ***  
+                self.subheader_locs.append(index)
         
         for player in range(self.player_count):
             #Read Dealt Cards
@@ -80,42 +67,45 @@ class Round(object):
             self.player_hands.append(h)
         
         #TODO: Instances of Street for each street. Parse individual lines in street constructor
-        # Read Preflop behaviour
-        index = self.subheader_locs[0] + self.player_count + 1
-        line = lines[index]
-        stage = 'Pre-Flop'    
-        while '***' not in line:
-            words = line.split(' : ')            
-            position = words[0]
-            action = words[1]
-            self.player_at[position.replace(' ','')].actions.append((stage,action))
-            
-            index = index + 1
-            line = lines[index]
- 
-        if self.has_flop:
-            #Read Flop Cards
-            index = self.subheader_locs[1]
-            board_str = lines[index][-10:-2]
-            self.board = [Card(i) for i in board_str.split(' ')]            
-            
-        if self.has_turn:
-            #Read Turn Card
-            index = self.subheader_locs[2]
-            turn_card = lines[index][-4:-2]
-            self.board.append(Card(turn_card))
-            
-        if self.has_river:
-            #Read River Card
-            index = self.subheader_locs[3]
-            river_card = lines[index][-4:-2]
-            self.board.append(Card(river_card))
+        for i,(begin,end) in enumerate(zip(self.subheader_locs[0:-1],self.subheader_locs[1:])):
+            self.streets.append(Street(lines[begin:end]))
+        # Read Preflop behaviour        
+        # index = self.subheader_locs[0] + self.player_count + 1
+        # line = lines[index]
+        # stage = 'Pre-Flop'
+        # while '***' not in line:
+        #     words = line.split(' : ')            
+        #     position = words[0]
+        #     action = words[1]
+        #     self.player_at[position.replace(' ','')].actions.append((stage,action))
+        #     
+        #     index = index + 1
+        #     line = lines[index]
+        # 
+        # 
+        # if self.has_flop:
+        #     #Read Flop Cards
+        #     index = self.subheader_locs[1]
+        #     board_str = lines[index][-10:-2]
+        #     self.board = [Card(i) for i in board_str.split(' ')]            
+        #     
+        # if self.has_turn:
+        #     #Read Turn Card
+        #     index = self.subheader_locs[2]
+        #     turn_card = lines[index][-4:-2]
+        #     self.board.append(Card(turn_card))
+        #     
+        # if self.has_river:
+        #     #Read River Card
+        #     index = self.subheader_locs[3]
+        #     river_card = lines[index][-4:-2]
+        #     self.board.append(Card(river_card))
 
-        self.player_results = ['']*self.player_count
-        for player in range(self.player_count):            
-            index = self.subheader_locs[4] + player + 3
-            if index < len(lines):
-                self.player_results[player] = lines[index][8:]
+       ##   self.player_results = ['']*self.player_count
+        # for player in range(self.player_count):            
+        #     index = self.subheader_locs[4] + player + 3
+        #     if index < len(lines):
+        #         self.player_results[player] = lines[index][8:]
         
         #self.players_in_flop = 
         #self.players_in_turn =       
