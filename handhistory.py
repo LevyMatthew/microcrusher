@@ -120,3 +120,5 @@ for round in rounds:
 # print(h)
 # print(h.made_hand_components())
 # print(h.best_made_hand())
+
+all_streets[0].process_actions()
